@@ -1,0 +1,10 @@
+[DEFAULT]
+BASEURL=http://cgioo.com/plugin.php?id=singcere_waterfall
+[{000214A0-0000-0000-C000-000000000046}]
+Prop3=19,2
+[InternetShortcut]
+URL=http://www.cgioo.com/
+IDList=
+IconFile=C:\windows\system32\SHELL32.dll
+IconIndex=301
+HotKey=0

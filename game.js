@@ -5,12 +5,11 @@ Array.prototype.remove = function(val) {
         this.splice(index, 1);
     }
 };
-
-
 var visible={
     width:600,
     height:800
 }
+var _enemyAI=EnemyAI.getInstance();
 var _BG;
 var _BG2;
 var _EG;
@@ -38,19 +37,6 @@ var bulletState={
     isShoot:false,
 }
 
-const const_MapSpeed=3;
-const const_KeyCheckRate = 15;
-const const_keyMap = {
-    37:"left",
-    65:"left",
-    87:"up",
-    38:"up",
-    68:"right",
-    39:"right",
-    83:"down",
-    40:"down",
-    32:"space",
-};
 window.onload=()=>{
     document.onkeydown=function(e){ 
         keyDownState[const_keyMap[e.which]] = true;  
@@ -100,6 +86,7 @@ window.onload=()=>{
     _BG=new Sprite("image/BG.png",0,visible.height,600,1638,_EG.Canvas);
     _BG2=new Sprite("image/BG.png",0,visible.height-1638,600,1638,_EG.Canvas);
     _plane=new Sprite("image/plane1.png",300,750,256,256,_EG.Canvas);
+    _enemyAI.addEnemy(new Sprite("image/Enemy1.png",300,500,256,256,_EG.Canvas));
     _plane.setScale(0.7);
     _plane.setAnchorPoint(0.5,0.5);
     _BG.setAnchorPoint(0,1);
@@ -116,30 +103,98 @@ var updateFunction=function(timestamp)
 {
     if(document.getElementById('canvasID')!=null)
     {
-        new Image().src = 'image/plane1.png';
-        new Image().src = 'image/plane2.png';
-        new Image().src = 'image/plane3.png';
+        //add image to memory
+        let t=new Image();
+        let t2=new Image();
+        let t3=new Image();
+        t.crossOrigin = '';
+        t2.crossOrigin = '';
+        t3.crossOrigin = '';
+        t.src = 'image/plane1.png';
+        t2.src = 'image/plane2.png';
+        t3.src = 'image/plane3.png';
+        
+       
+        // new Image().src = 'image/Enemy1.png';
+        // new Image().src = 'image/Enemy2.png';
+        // new Image().src = 'image/Enemy3.png';
 
+        //do SomeThing logic
         doMapScroll();
         doPlaneAnimation(timestamp);
         processBullet();
         processLockBullet(timestamp);
+        _enemyAI.updateFunction(timestamp);
+
+        testCollision(_plane,_enemyAI.getEnemy(0).sprite);
+
+        //addSpriteToScene
         _EG.addChild(_BG,0);
         _EG.addChild(_BG2,0);
         _EG.addChild(_plane,1);
         _EG.addChild(_creatorLabel,2);
-
-        // console.log(bulletState.bullets.length);
+        _enemyAI.addAllEnemyToScene(_EG);
         for(let i=0;i<bulletState.bullets.length;i++)
-        {
             _EG.addChild(bulletState.bullets[i],3);
-        }
     }
 };
 
+var detectIntersection=function(sprite1,sprite2)
+{
+    if((Math.abs(sprite2.x - sprite1.x) < sprite1.width / 2 + sprite2.width / 2) &&
+        Math.abs(sprite2.y - sprite1.y) < sprite1.height / 2 + sprite2.height / 2)
+      return true
+    else
+      return false
+}
+
+CollisionJudge=function(sprite1,sprite2)
+{
+    let rect1Right = sprite1.x + sprite1.width,
+    rect1Bottom = sprite1.y + sprite1.height,
+    rect2Right = sprite2.x + sprite2.width,
+    rect2Bottom = sprite2.y + sprite2.height;
+
+    let rect3Left = Math.max(sprite1.x, sprite2.x),
+    rect3Top = Math.max(sprite1.y, sprite2.y),
+    rect3Right = Math.min(rect1Right, rect2Right),
+    rect3Bottom = Math.min(rect1Bottom, rect2Bottom);
+
+    let rect={
+        left: rect3Left,
+        top: rect3Top,
+        width: rect3Right - rect3Left,
+        height: rect3Bottom - rect3Top
+    }
+    let imgData1 = _EG.Canvas.getImageData(rect.left, rect.top, rect.width, rect.height),
+        imgData2 = _EG.Canvas.getImageData(rect.left, rect.top, rect.width, rect.height);
+    let imgData1Data = imgData1.data;
+    let imgData2Data = imgData2.data;
+
+    for(var i = 3, len = imgData1Data.length; i < len; i += 4) {
+        if(imgData1Data[i] > 0 && imgData2Data[i] > 0)
+            return true;
+    }
+    return false;
+}
+
+var testCollision=function(plane,enemy)
+{
+    // console.log(plane,enemy);
+    if(detectIntersection(plane, enemy)) {
+        // var intersectionRect = getIntersectionRect(panda, bamboo)
+        // isCollisions = handleEgdeCollisions(intersectionRect)
+        let isCollision=CollisionJudge(plane, enemy);
+        if(isCollision)
+            console.log("detect");
+    }
+    else
+        console.log("not detect");
+}
+
 var doMapScroll=function(){
-    _BG.y+=const_MapSpeed;
-    _BG2.y+=const_MapSpeed;
+    _BG.y+=_MapSpeed;
+    _BG2.y+=_MapSpeed;
     if(_BG.y>=_BG.height+visible.height ||_BG2.y>=_BG.height+visible.height)
     {
         if(_BG.y>_BG2.y)
@@ -148,21 +203,22 @@ var doMapScroll=function(){
             _BG2.y-=_BG.height+visible.height;
     }
 }
+
 var doPlaneAnimation=function(timestamp){
-    if(timestamp-planeState.lastTimeStamp >50)
-    {
-        planeState.AnimationState++;
-        if(planeState.AnimationState==4)
-            planeState.AnimationState=1;
-        _plane.setImage(`image/plane${planeState.AnimationState}.png`);
-        planeState.lastTimeStamp=timestamp;
-    }
+    // if(timestamp-planeState.lastTimeStamp >50)
+    // {
+    //     planeState.AnimationState++;
+    //     if(planeState.AnimationState==4)
+    //         planeState.AnimationState=1;
+    //     _plane.setImage(`image/plane${planeState.AnimationState}.png`);
+    //     planeState.lastTimeStamp=timestamp;
+    // }
 }
 
 var shot=function(){
     if(bulletState.isLock)
         return;
-    let bullet=new Sprite("image/bullet.png",_plane.x,_plane.y-100,10,11,_EG.Canvas)
+    let bullet=new Sprite("image/bullet.png",_plane.x-5,_plane.y-70,10,11,_EG.Canvas)
     bulletState.bullets.push(bullet);
     bulletState.isShoot=true;
     bulletState.isLock=true;

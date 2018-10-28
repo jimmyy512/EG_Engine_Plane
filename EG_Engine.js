@@ -173,6 +173,7 @@ var Sprite = function (ImagePath, x, y, width, height, canvas) {
     this._originHeight = height;
     this._OriginImagePath = ImagePath;
     this._Image = new Image();
+    this._Image.crossOrigin = '';
     this._Image.src = ImagePath;
     this._degress = 0;
     this._scale=1;
@@ -193,10 +194,12 @@ Sprite.prototype.setAnchorPoint = function (point1, point2) {
 }
 Sprite.prototype.setImage=function(newImagePath)
 {
+    this._Image.crossOrigin = '';
     this._Image.src = newImagePath;
 }
 Sprite.prototype.ResetImage=function()
 {
+    this._Image.crossOrigin = '';
     this._Image.src=this._OriginImagePath;
 }
 Sprite.prototype.setScale = function (scale) {
@@ -263,6 +266,7 @@ Sprite.prototype.runAction=function(key,actions,Director)
         sumInterval += tmp["interval"];
         Director._addAnimationEvent(`#${key}${i}`, sumInterval ,
         ()=>{
+            this._Image.crossOrigin = '';
             this._Image.src=tmp["path"];
         },true);
     }
