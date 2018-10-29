@@ -1,3 +1,8 @@
+//EG Engine簡單遊戲引擎,基於Html5 Canvas
+//代碼中變數或是函數function前面有加上'_'底線，代表為私有變量，私有函數
+//或無底線為公開函數,使用者可以任意調用
+//By Majitoo
+
 var throwException =function(content)
 { 
     throw "[MyEngine warn]: " + content;
@@ -43,7 +48,6 @@ Scheduler.prototype._IsKeyRepeat = function (keyName) {
         throwException(`Scheduler _IsKeyRepeat error,event key: "${keyName}" is repeat`);
 }
 Scheduler.prototype._ListenCallBacks = function (timestamp) {
-    // console.log(timestamp);
     for (let i = 0; i < this.callbacks.length; i++) {
         let paraTime = parseInt(timestamp / 100) / 10;
         let eventTime = parseInt(this.callbacks[i].timestamp / 100) / 10;
@@ -75,7 +79,22 @@ Scheduler.prototype._removeCallBackFromKey=function(keyName)
     return isRemove===true?true:false;
 }
 
-//Director
+//Director 導演類別:引擎主要核心
+/**
+ * @param  {Number} maxFPS  
+ * 最大FPS限制
+ * @param  {Number} CanvasWidth 
+ * Canvas寬度
+ * @param  {Number} CanvasHeight
+ * Canvas高度
+ * @param  {Ｓtring} CanvasID
+ * Canvas ID tag名稱
+ * @param  {Function} UpdateCallFunc
+ * 刷新回調函數
+ * 渲染一個Frame前,固定調用的Function
+ * @param {window} window
+ * 傳入window實例
+ */
 var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFunc,window) {
     this.visible = {
         width: CanvasWidth,
@@ -99,25 +118,42 @@ var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFu
             _this._then = _this._now - (_this._elapsed % _this._fpsInterval);
             //draw stuff
             _this._preRenderInit(timestamp);
-            _this._DrawALL();
             _this._UpdateCallFunc(timestamp);
-            
+            _this._DrawALL();
             _this._Scheduler._ListenCallBacks(_this._TimeStamp);
         }
     }
     var _this = this;
-    //public
     this.Canvas = document.getElementById(CanvasID).getContext('2d');
     this.Canvas.globalCompositeOperation = "source-over";
     this.window=window;
     this.window.requestAnimationFrame(this._Update);
 }
+
+//必須在Director刷新回調函數UpdateCallFunc中,把元素加到場景上,
+//Canvas就會渲染那個元素
+/**
+ * @param  {Ｓprtie,Label....} child  
+ * EG Engine元素類別 像是Sprite圖片精靈 Label標籤 都是場景元素
+ * @param  {Number} index 
+ * z-order 數字越高圖層在越上面
+ */
 Director.prototype.addChild = function (child, index) {
     if (this._children[index] == undefined)
         this._children[index] = [child];
     else
         this._children[index].unshift(child);
 }
+
+Director.prototype.isCollision=function (el1,el2)
+{
+    if((Math.abs(el2.x - el1.x) < el1.width / 2 + el2.width / 2) &&
+    Math.abs(el2.y - el1.y) < el1.height / 2 + el2.height / 2)
+        return true;
+    else
+        return false;
+}
+
 Director.prototype.getScheduler=function()
 {
     return this._Scheduler;
@@ -162,7 +198,22 @@ Director.prototype._DrawALL = function () {
     this._children.length = 0;
 }
 
-//Sprite
+//Sprite圖片精靈
+//EG_Engine元素之一,能透過Director.addChild加入元素到場景上
+/**
+ * @param {String} ImagePath 
+ * 圖片路徑
+ * @param {Number} x 
+ * 元素x點座標
+ * @param {Number} y 
+ * 元素y點座標
+ * @param {Number} width
+ * 圖片原始寬度
+ * @param {Number} height 
+ * 圖片原始高度
+ * @param {Director.Canvas} canvas
+ * 傳入一開始我們創造Director的實例,實例下有個canvas
+ */
 var Sprite = function (ImagePath, x, y, width, height, canvas) {
     //private
     this._Name="Sprite";
@@ -188,6 +239,26 @@ var Sprite = function (ImagePath, x, y, width, height, canvas) {
         point2: 0
     };
 }
+
+//設置圖片精靈茅點 也可以說圖片中心點
+//目前支援參數有
+// (0,0);
+// (0,0.5);
+// (0.5,0);
+// (0.5,0.5);
+// (0,1);
+// (1,0);
+// (1,1);
+//已x為例子
+//0 最左邊 0.5中間 1為最右邊
+//已y為例子
+//0 最上邊 0.5中間 1為最下邊
+/**
+ * @param {Number} point1 
+ * 元素x點座標
+ * @param {Number} point2 
+ * 元素y點座標
+ */
 Sprite.prototype.setAnchorPoint = function (point1, point2) {
     this.anchor.point1 = point1;
     this.anchor.point2 = point2;
