@@ -9,7 +9,7 @@ var visible={
     width:600,
     height:800
 }
-var _enemyAI=EnemyAI.getInstance();
+var _enemyAI;
 var _BG;
 var _BG2;
 var _EG;
@@ -31,11 +31,12 @@ var planeState={
 };
 var bulletState={
     bullets:[],
-    moveSpeed:4,
+    moveSpeed:8,
     lastTimeStamp:0,
     isLock:false,
     isShoot:false,
 }
+
 
 window.onload=()=>{
     document.onkeydown=function(e){ 
@@ -83,10 +84,10 @@ window.onload=()=>{
     KeyEventCallBack();
 
     _EG=new Director(60,visible.width,visible.height,'canvasID',updateFunction,window);
+    _enemyAI=EnemyAI.getInstance(_EG);
     _BG=new Sprite("image/BG.png",0,visible.height,600,1638,_EG.Canvas);
     _BG2=new Sprite("image/BG.png",0,visible.height-1638,600,1638,_EG.Canvas);
-    _plane=new Sprite("image/plane1.png",300,750,256,256,_EG.Canvas);
-    _enemyAI.addEnemy(new Sprite("image/Enemy1.png",300,500,256,256,_EG.Canvas));
+    _plane=new Sprite("image/plane1.png",300,750,243,158,_EG.Canvas);
     _plane.setScale(0.7);
     _plane.setAnchorPoint(0.5,0.5);
     _BG.setAnchorPoint(0,1);
@@ -103,38 +104,65 @@ var updateFunction=function(timestamp)
 {
     if(document.getElementById('canvasID')!=null)
     {
-        //add image to memory
-        new Image().src='image/plane1.png';
-        new Image().src='image/plane2.png';
-        new Image().src='image/plane3.png';
-        new Image().src = 'image/Enemy1.png';
-        new Image().src = 'image/Enemy2.png';
-        new Image().src = 'image/Enemy3.png';
-
         //do SomeThing logic
         doMapScroll();
         doPlaneAnimation(timestamp);
         processBullet();
         processLockBullet(timestamp);
         _enemyAI.updateFunction(timestamp);
-        CollisionUpdate(_plane,_enemyAI.getEnemy(0).sprite);
+        BulletCollisionUpdate(bulletState.bullets,_enemyAI.getAllEnemy());
+        if(_enemyAI.getAllEnemy().length<=1)
+            _enemyAI.addEnemy(new Sprite("image/Enemy1.png",Math.floor(Math.random()*500+50),-50,173,150,_EG.Canvas));
         //addSpriteToScene
         _EG.addChild(_BG,0);
         _EG.addChild(_BG2,0);
         _EG.addChild(_plane,1);
         _EG.addChild(_creatorLabel,2);
-        _enemyAI.addAllEnemyToScene(_EG);
+        _enemyAI.addAllElementToScene();
         for(let i=0;i<bulletState.bullets.length;i++)
             _EG.addChild(bulletState.bullets[i],3);
     }
 };
 
-var CollisionUpdate=function(plane,enemy)
+var newImageToMemory=function()
 {
-    if(_EG.isCollision(plane, enemy))
-        console.log("detect");
-    else
-        console.log("not detect");
+    //add image to memory
+    new Image().src='image/plane1.png';
+    new Image().src='image/plane2.png';
+    new Image().src='image/plane3.png';
+    new Image().src = 'image/Enemy1.png';
+    new Image().src = 'image/Enemy2.png';
+    new Image().src = 'image/Enemy3.png';
+    new Image().src = 'image/explosion001.png';
+    new Image().src = 'image/explosion002.png';
+    new Image().src = 'image/explosion003.png';
+    new Image().src = 'image/explosion004.png';
+    new Image().src = 'image/explosion005.png';
+    new Image().src = 'image/explosion006.png';
+    new Image().src = 'image/explosion007.png';
+    new Image().src = 'image/explosion008.png';
+    new Image().src = 'image/explosion009.png';
+    new Image().src = 'image/explosion010.png';
+    new Image().src = 'image/explosion011.png';
+    new Image().src = 'image/explosion012.png';
+    new Image().src = 'image/explosion013.png';
+    new Image().src = 'image/explosion014.png';
+    new Image().src = 'image/explosion015.png';
+}
+
+var BulletCollisionUpdate=function(bullets,enemys)
+{
+    for(let i=0;i<bullets.length;i++)
+    {
+        for(let j=0;j<enemys.length;j++)
+        {
+            if(_EG.isCollision(bullets[i], enemys[j].sprite))
+            {//hit
+                enemys[j].state.hp-=20;
+                bulletState.bullets.remove(bullets[i])
+            }
+        }
+    }
 }
 
 var doMapScroll=function(){
