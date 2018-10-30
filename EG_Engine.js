@@ -39,11 +39,12 @@ var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFu
     this._children = [];
     this._UpdateCallFunc = UpdateCallFunc;
     this._TimeStamp = 0;
-    this._CacheCanvas=window.document.createElement('canvas');
-    this._CacheCanvas.width=CanvasWidth;
-    this._CacheCanvas.height=CanvasHeight;
-    this._CacheCanvas=this._CacheCanvas.getContext('2d');
+    this._CacheCanvasElement=window.document.createElement('canvas');
+    this._CacheCanvasElement.width=CanvasWidth;
+    this._CacheCanvasElement.height=CanvasHeight;
+    this._CacheCanvas=this._CacheCanvasElement.getContext('2d');
     this._CacheCanvas.globalCompositeOperation = "source-over";
+    var _this = this;
     this._Update = function (timestamp) {
         _this.window.requestAnimationFrame(_this._Update);
         _this._now = Date.now();
@@ -53,11 +54,11 @@ var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFu
             //draw stuff
             _this._preRenderInit(timestamp);
             _this._UpdateCallFunc(timestamp);
-            _this._DrawALL();
             _this._Scheduler._ListenCallBacks(_this._TimeStamp);
+            _this._DrawALL();
+            _this.CacheCanvasToScene();
         }
     }
-    var _this = this;
     this._Canvas = document.getElementById(CanvasID).getContext('2d');
     this._Canvas.globalCompositeOperation = "source-over";
     this.window=window;
@@ -77,6 +78,11 @@ Director.prototype.addChild = function (child, index) {
         this._children[index] = [child];
     else
         this._children[index].unshift(child);
+}
+
+Director.prototype.CacheCanvasToScene=function(){
+    this._Canvas.clearRect(0, 0, this.visible.width, this.visible.height);
+    this._Canvas.drawImage(this._CacheCanvasElement,0,0,this.visible.width, this.visible.height);
 }
 
 Director.prototype.isCollision=function (el1,el2)
@@ -110,9 +116,9 @@ Director.prototype.removeEventFromKey=function(key)
 }
 Director.prototype._preRenderInit = function (TimeStamp) {
     this._TimeStamp = TimeStamp;
-    this._Canvas.clearRect(0, 0, this.visible.width, this.visible.height);
 }
 Director.prototype._DrawALL = function () {
+    this._CacheCanvas.clearRect(0, 0, this.visible.width, this.visible.height);
     for (let i = 0; i < Object.keys(this._children).length; i++) {
         let index = Object.keys(this._children)[i];
         for (let j = 0; j < this._children[index].length; j++) {
@@ -120,12 +126,12 @@ Director.prototype._DrawALL = function () {
             if (child._Name== "Sprite") {
                 child._ProcessPositionToDrawPosition();
                 if (child._degress == 0)
-                    child.DrawOnCanvas(this._Canvas);
+                    child.DrawOnCanvas(this._CacheCanvas);
                 else
-                    child.DrawOnCanvasWithRotation(this._Canvas);
+                    child.DrawOnCanvasWithRotation(this._CacheCanvas);
             }
             else if (child._Name == "Label") {
-                child.Draw(this._Canvas);
+                child.Draw(this._CacheCanvas);
             }
         }
     }
