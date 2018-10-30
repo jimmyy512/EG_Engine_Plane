@@ -83,16 +83,16 @@ window.onload=()=>{
     };
     KeyEventCallBack();
 
-    _EG=new Director(60,visible.width,visible.height,'canvasID',updateFunction,window);
+    _EG=new Director(30,visible.width,visible.height,'canvasID',updateFunction,window);
     _enemyAI=EnemyAI.getInstance(_EG);
-    _BG=new Sprite("image/BG.png",0,visible.height,600,1638,_EG.Canvas);
-    _BG2=new Sprite("image/BG.png",0,visible.height-1638,600,1638,_EG.Canvas);
-    _plane=new Sprite("image/plane1.png",300,750,243,158,_EG.Canvas);
+    // _BG=new Sprite("image/BG.png",0,visible.height,600,1638);
+    // _BG2=new Sprite("image/BG.png",0,visible.height-1638,600,1638);
+    // _BG.setAnchorPoint(0,1);
+    // _BG2.setAnchorPoint(0,1);
+    _plane=new Sprite("image/plane1.png",300,750,243,158);
     _plane.setScale(0.7);
     _plane.setAnchorPoint(0.5,0.5);
-    _BG.setAnchorPoint(0,1);
-    _BG2.setAnchorPoint(0,1);
-    _creatorLabel=new Label("Created By Majitoo",200,50,"Arial",24,"White",_EG.Canvas);
+    _creatorLabel=new Label("Created By Majitoo",200,50,"Arial",24,"White");
 
     // _EG.addIntervalEvent("MapScroll",0.016,()=>
     // {
@@ -105,17 +105,17 @@ var updateFunction=function(timestamp)
     if(document.getElementById('canvasID')!=null)
     {
         //do SomeThing logic
-        doMapScroll();
+        // doMapScroll();
         doPlaneAnimation(timestamp);
         processBullet();
         processLockBullet(timestamp);
         _enemyAI.updateFunction(timestamp);
         BulletCollisionUpdate(bulletState.bullets,_enemyAI.getAllEnemy());
         if(_enemyAI.getAllEnemy().length<=1)
-            _enemyAI.addEnemy(new Sprite("image/Enemy1.png",Math.floor(Math.random()*500+50),-50,173,150,_EG.Canvas));
+            _enemyAI.addEnemy(new Sprite("image/Enemy1.png",Math.floor(Math.random()*500+50),-50,173,150));
         //addSpriteToScene
-        _EG.addChild(_BG,0);
-        _EG.addChild(_BG2,0);
+        // _EG.addChild(_BG,0);
+        // _EG.addChild(_BG2,0);
         _EG.addChild(_plane,1);
         _EG.addChild(_creatorLabel,2);
         _enemyAI.addAllElementToScene();
@@ -191,7 +191,7 @@ var doPlaneAnimation=function(timestamp){
 var shot=function(){
     if(bulletState.isLock)
         return;
-    let bullet=new Sprite("image/bullet.png",_plane.x-5,_plane.y-70,10,11,_EG.Canvas)
+    let bullet=new Sprite("image/bullet.png",_plane.x-5,_plane.y-70,10,11)
     bulletState.bullets.push(bullet);
     bulletState.isShoot=true;
     bulletState.isLock=true;

@@ -7,77 +7,6 @@ var throwException =function(content)
 { 
     throw "[MyEngine warn]: " + content;
 }
-//Scheduler
-var Scheduler = function () {
-    this.callbacks = [];
-    this.EventObject = function (timestamp,key,sec,callBackFunc,isLoop)
-    {
-        this.timestamp = timestamp;
-        this.key = key;
-        this.sec = sec;
-        this.callBackFunc = callBackFunc;
-        this.isLoop = isLoop;
-    }
-}
-Scheduler.prototype._addCallBack = function (timestamp, key, sec, callBackFunc,isAnimation) {
-    if(!isAnimation)
-        this._isKeyVaild(key);
-    this._IsKeyRepeat(key);    
-    let event = new this.EventObject(timestamp,key,sec,callBackFunc,false);
-    this.callbacks.push(event);
-}
-Scheduler.prototype._addIntervalCallBack = function (timestamp, key, sec, callBackFunc)
-{
-    this._isKeyVaild(key);
-    this._IsKeyRepeat(key);    
-    let event = new this.EventObject(timestamp, key, sec, callBackFunc, true);
-    this.callbacks.push(event);
-}
-Scheduler.prototype._isKeyVaild = function(keyName)
-{
-    if(keyName.indexOf("#")!=-1)
-        throwException(`Scheduler key: ${keyName} is not Vaild, "#" is KeyWord!`);
-}
-Scheduler.prototype._IsKeyRepeat = function (keyName) {
-    let isKeyRepeat=false;
-    for (let i = 0; i < this.callbacks.length; i++) {
-        if (this.callbacks[i].key==keyName)
-            isKeyRepeat=true;
-    }
-    if (isKeyRepeat)
-        throwException(`Scheduler _IsKeyRepeat error,event key: "${keyName}" is repeat`);
-}
-Scheduler.prototype._ListenCallBacks = function (timestamp) {
-    for (let i = 0; i < this.callbacks.length; i++) {
-        let paraTime = parseInt(timestamp / 100) / 10;
-        let eventTime = parseInt(this.callbacks[i].timestamp / 100) / 10;
-        if ((eventTime + this.callbacks[i].sec) < paraTime) {
-            if(this.callbacks[i].isLoop==false)
-            {//remove callback
-                let removeElement = this.callbacks.splice(i, 1);
-                removeElement[0].callBackFunc();
-                i--;
-            }
-            else
-            {//interval callback add time
-                this.callbacks[i].callBackFunc();
-                this.callbacks[i].timestamp=timestamp+(this.callbacks[i].sec*100);
-            }
-        }
-    }
-}
-Scheduler.prototype._removeCallBackFromKey=function(keyName)
-{
-    let isRemove=false;
-    for (let i = 0; i < this.callbacks.length; i++) {
-        if (this.callbacks[i].key == keyName)
-        {
-            isRemove=true;
-            let removeElement = this.callbacks.splice(i, 1);
-        }
-    }
-    return isRemove===true?true:false;
-}
 
 //Director 導演類別:引擎主要核心
 /**
@@ -110,6 +39,11 @@ var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFu
     this._children = [];
     this._UpdateCallFunc = UpdateCallFunc;
     this._TimeStamp = 0;
+    this._CacheCanvas=window.document.createElement('canvas');
+    this._CacheCanvas.width=CanvasWidth;
+    this._CacheCanvas.height=CanvasHeight;
+    this._CacheCanvas=this._CacheCanvas.getContext('2d');
+    this._CacheCanvas.globalCompositeOperation = "source-over";
     this._Update = function (timestamp) {
         _this.window.requestAnimationFrame(_this._Update);
         _this._now = Date.now();
@@ -124,8 +58,8 @@ var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFu
         }
     }
     var _this = this;
-    this.Canvas = document.getElementById(CanvasID).getContext('2d');
-    this.Canvas.globalCompositeOperation = "source-over";
+    this._Canvas = document.getElementById(CanvasID).getContext('2d');
+    this._Canvas.globalCompositeOperation = "source-over";
     this.window=window;
     this.window.requestAnimationFrame(this._Update);
 }
@@ -176,7 +110,7 @@ Director.prototype.removeEventFromKey=function(key)
 }
 Director.prototype._preRenderInit = function (TimeStamp) {
     this._TimeStamp = TimeStamp;
-    this.Canvas.clearRect(0, 0, this.visible.width, this.visible.height);
+    this._Canvas.clearRect(0, 0, this.visible.width, this.visible.height);
 }
 Director.prototype._DrawALL = function () {
     for (let i = 0; i < Object.keys(this._children).length; i++) {
@@ -186,12 +120,12 @@ Director.prototype._DrawALL = function () {
             if (child._Name== "Sprite") {
                 child._ProcessPositionToDrawPosition();
                 if (child._degress == 0)
-                    child.DrawOnCanvas();
+                    child.DrawOnCanvas(this._Canvas);
                 else
-                    child.DrawOnCanvasWithRotation();
+                    child.DrawOnCanvasWithRotation(this._Canvas);
             }
             else if (child._Name == "Label") {
-                child.Draw();
+                child.Draw(this._Canvas);
             }
         }
     }
@@ -214,7 +148,7 @@ Director.prototype._DrawALL = function () {
  * @param {Director.Canvas} canvas
  * 傳入一開始我們創造Director的實例,實例下有個canvas
  */
-var Sprite = function (ImagePath, x, y, width, height, canvas) {
+var Sprite = function (ImagePath, x, y, width, height) {
     //private
     this._Name="Sprite";
     this._originX = x;
@@ -229,7 +163,6 @@ var Sprite = function (ImagePath, x, y, width, height, canvas) {
     this._degress = 0;
     this._scale=1;
     //public
-    this.Canvas = canvas;
     this.x = x;
     this.y = y;
     this.width = width;
@@ -309,16 +242,16 @@ Sprite.prototype.getOriginWidth = function () {
 Sprite.prototype.getOriginHeight = function () {
     return this._originHeight;
 }
-Sprite.prototype.DrawOnCanvasWithRotation = function () {
-    this.Canvas.save();
-    this.Canvas.translate(this._drawX + this.width / 2, this._drawY + this.height / 2);
-    this.Canvas.rotate(this._degress * Math.PI / 180);
-    this.Canvas.drawImage(this._Image, -this.width / 2, -this.height / 2,
+Sprite.prototype.DrawOnCanvasWithRotation = function (canvas) {
+    canvas.save();
+    canvas.translate(this._drawX + this.width / 2, this._drawY + this.height / 2);
+    canvas.rotate(this._degress * Math.PI / 180);
+    canvas.drawImage(this._Image, -this.width / 2, -this.height / 2,
         this.width,this.height);
-    this.Canvas.restore();
+    canvas.restore();
 }
-Sprite.prototype.DrawOnCanvas = function () {
-    this.Canvas.drawImage(
+Sprite.prototype.DrawOnCanvas = function (canvas) {
+    canvas.drawImage(
         this._Image,
         this._drawX,
         this._drawY,
@@ -374,9 +307,8 @@ Sprite.prototype._ProcessPositionToDrawPosition=function()
 }
 
 //Label
-var Label = function (LabelString, x, y, FontName, FontSize, color, canvas) {
+var Label = function (LabelString, x, y, FontName, FontSize, color) {
     this._Name="Label";
-    this.Canvas = canvas;
     this.LabelString = LabelString;
     this.FontSize = FontSize;
     this.x = x;
@@ -386,9 +318,81 @@ var Label = function (LabelString, x, y, FontName, FontSize, color, canvas) {
     this.FontName = FontName;
     this.Color=color;
 }
-Label.prototype.Draw = function()
+Label.prototype.Draw = function(canvas)
 {
-    this.Canvas.font=this.FontSize+"px "+this.FontName;
-    this.Canvas.fillStyle=this.Color;
-    this.Canvas.fillText(this.LabelString,this.x,this.y);
+    canvas.font=this.FontSize+"px "+this.FontName;
+    canvas.fillStyle=this.Color;
+    canvas.fillText(this.LabelString,this.x,this.y);
+}
+
+//Scheduler
+var Scheduler = function () {
+    this.callbacks = [];
+    this.EventObject = function (timestamp,key,sec,callBackFunc,isLoop)
+    {
+        this.timestamp = timestamp;
+        this.key = key;
+        this.sec = sec;
+        this.callBackFunc = callBackFunc;
+        this.isLoop = isLoop;
+    }
+}
+Scheduler.prototype._addCallBack = function (timestamp, key, sec, callBackFunc,isAnimation) {
+    if(!isAnimation)
+        this._isKeyVaild(key);
+    this._IsKeyRepeat(key);    
+    let event = new this.EventObject(timestamp,key,sec,callBackFunc,false);
+    this.callbacks.push(event);
+}
+Scheduler.prototype._addIntervalCallBack = function (timestamp, key, sec, callBackFunc)
+{
+    this._isKeyVaild(key);
+    this._IsKeyRepeat(key);    
+    let event = new this.EventObject(timestamp, key, sec, callBackFunc, true);
+    this.callbacks.push(event);
+}
+Scheduler.prototype._isKeyVaild = function(keyName)
+{
+    if(keyName.indexOf("#")!=-1)
+        throwException(`Scheduler key: ${keyName} is not Vaild, "#" is KeyWord!`);
+}
+Scheduler.prototype._IsKeyRepeat = function (keyName) {
+    let isKeyRepeat=false;
+    for (let i = 0; i < this.callbacks.length; i++) {
+        if (this.callbacks[i].key==keyName)
+            isKeyRepeat=true;
+    }
+    if (isKeyRepeat)
+        throwException(`Scheduler _IsKeyRepeat error,event key: "${keyName}" is repeat`);
+}
+Scheduler.prototype._ListenCallBacks = function (timestamp) {
+    for (let i = 0; i < this.callbacks.length; i++) {
+        let paraTime = parseInt(timestamp / 100) / 10;
+        let eventTime = parseInt(this.callbacks[i].timestamp / 100) / 10;
+        if ((eventTime + this.callbacks[i].sec) < paraTime) {
+            if(this.callbacks[i].isLoop==false)
+            {//remove callback
+                let removeElement = this.callbacks.splice(i, 1);
+                removeElement[0].callBackFunc();
+                i--;
+            }
+            else
+            {//interval callback add time
+                this.callbacks[i].callBackFunc();
+                this.callbacks[i].timestamp=timestamp+(this.callbacks[i].sec*100);
+            }
+        }
+    }
+}
+Scheduler.prototype._removeCallBackFromKey=function(keyName)
+{
+    let isRemove=false;
+    for (let i = 0; i < this.callbacks.length; i++) {
+        if (this.callbacks[i].key == keyName)
+        {
+            isRemove=true;
+            let removeElement = this.callbacks.splice(i, 1);
+        }
+    }
+    return isRemove===true?true:false;
 }
