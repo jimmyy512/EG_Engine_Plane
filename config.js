@@ -1,3 +1,5 @@
+//玩家飛機多少秒換一次圖片動畫
+PLAYER_PLANE_ANIMATION_INTERVAL=50;
 //敵人飛機多少秒換一次圖片動畫
 ENEMY_PLANE_ANIMATION_INTERVAL=50;
 //爆炸動畫速度

@@ -6,8 +6,6 @@ var EnemyAI=(function(){
         //*飛機狀態
         function PlaneState()
         {
-            this.lastStamp=0;
-            this.AnimationState=1;
             this.hp=100;
             return this;
         }
@@ -57,6 +55,8 @@ var EnemyAI=(function(){
                 enemySprite.setScale(0.7);
                 enemySprite.setRotation(180);
                 enemySprite.setAnchorPoint(0.5,0.5);
+                enemySprite.setAnimation("image/Enemy",".png",ENEMY_PLANE_ANIMATION_INTERVAL,1,3);
+                enemySprite.play();
                 let obj={
                     "sprite":enemySprite,
                     "state":new PlaneState(),
@@ -79,15 +79,6 @@ var EnemyAI=(function(){
                     {
                         _enemys.remove(_enemys[i]);
                         continue;
-                    }
-
-                    if(parseInt(timeStamp-_enemys[i].state.lastStamp)>ENEMY_PLANE_ANIMATION_INTERVAL)
-                    {
-                        _enemys[i].state.AnimationState++;
-                        if(_enemys[i].state.AnimationState==4)
-                            _enemys[i].state.AnimationState=1;
-                        _enemys[i].sprite.setImage(`image/Enemy${ _enemys[i].state.AnimationState}.png`);
-                        _enemys[i].state.lastStamp=timeStamp;
                     }
                 }
                 for(let i=0;i<_explosion.length;i++)

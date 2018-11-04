@@ -24,8 +24,6 @@ var keyDownState={
 var planeState={
     hp:0,
     bullet:100,
-    AnimationState:1,
-    lastTimeStamp:0,
     const_moveSpeed:4,
     bulletInterval:200,
 };
@@ -90,6 +88,8 @@ window.onload=()=>{
     _BG.setAnchorPoint(0,1);
     _BG2.setAnchorPoint(0,1);
     _plane=new Sprite("image/plane1.png",300,750,243,158);
+    _plane.setAnimation("image/plane",".png",50,1,3);
+    _plane.play();
     _plane.setScale(0.7);
     _plane.setAnchorPoint(0.5,0.5);
     _creatorLabel=new Label("Created By Majitoo",200,50,"Arial",24,"White");
@@ -106,7 +106,7 @@ var updateFunction=function(timestamp)
     {
         //do SomeThing logic
         doMapScroll();
-        doPlaneAnimation(timestamp);
+        // doPlaneAnimation(timestamp);
         processBullet();
         processLockBullet(timestamp);
         _enemyAI.updateFunction(timestamp);
@@ -124,31 +124,31 @@ var updateFunction=function(timestamp)
     }
 };
 
-var newImageToMemory=function()
-{
-    //add image to memory
-    new Image().src='image/plane1.png';
-    new Image().src='image/plane2.png';
-    new Image().src='image/plane3.png';
-    new Image().src = 'image/Enemy1.png';
-    new Image().src = 'image/Enemy2.png';
-    new Image().src = 'image/Enemy3.png';
-    new Image().src = 'image/explosion001.png';
-    new Image().src = 'image/explosion002.png';
-    new Image().src = 'image/explosion003.png';
-    new Image().src = 'image/explosion004.png';
-    new Image().src = 'image/explosion005.png';
-    new Image().src = 'image/explosion006.png';
-    new Image().src = 'image/explosion007.png';
-    new Image().src = 'image/explosion008.png';
-    new Image().src = 'image/explosion009.png';
-    new Image().src = 'image/explosion010.png';
-    new Image().src = 'image/explosion011.png';
-    new Image().src = 'image/explosion012.png';
-    new Image().src = 'image/explosion013.png';
-    new Image().src = 'image/explosion014.png';
-    new Image().src = 'image/explosion015.png';
-}
+// var newImageToMemory=function()
+// {
+//     //add image to memory
+//     new Image().src='image/plane1.png';
+//     new Image().src='image/plane2.png';
+//     new Image().src='image/plane3.png';
+//     new Image().src = 'image/Enemy1.png';
+//     new Image().src = 'image/Enemy2.png';
+//     new Image().src = 'image/Enemy3.png';
+//     new Image().src = 'image/explosion001.png';
+//     new Image().src = 'image/explosion002.png';
+//     new Image().src = 'image/explosion003.png';
+//     new Image().src = 'image/explosion004.png';
+//     new Image().src = 'image/explosion005.png';
+//     new Image().src = 'image/explosion006.png';
+//     new Image().src = 'image/explosion007.png';
+//     new Image().src = 'image/explosion008.png';
+//     new Image().src = 'image/explosion009.png';
+//     new Image().src = 'image/explosion010.png';
+//     new Image().src = 'image/explosion011.png';
+//     new Image().src = 'image/explosion012.png';
+//     new Image().src = 'image/explosion013.png';
+//     new Image().src = 'image/explosion014.png';
+//     new Image().src = 'image/explosion015.png';
+// }
 
 var BulletCollisionUpdate=function(bullets,enemys)
 {
@@ -174,17 +174,6 @@ var doMapScroll=function(){
             _BG.y-=_BG.height+visible.height;
         else
             _BG2.y-=_BG.height+visible.height;
-    }
-}
-
-var doPlaneAnimation=function(timestamp){
-    if(timestamp-planeState.lastTimeStamp >50)
-    {
-        planeState.AnimationState++;
-        if(planeState.AnimationState==4)
-            planeState.AnimationState=1;
-        _plane.setImage(`image/plane${planeState.AnimationState}.png`);
-        planeState.lastTimeStamp=timestamp;
     }
 }
 

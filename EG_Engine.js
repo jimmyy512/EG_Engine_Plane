@@ -50,12 +50,12 @@ var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFu
         _this._now = Date.now();
         _this._elapsed = _this._now - _this._then;
         if (_this._elapsed > _this._fpsInterval) {
+            this._TimeStamp = timestamp;
             _this._then = _this._now - (_this._elapsed % _this._fpsInterval);
             //draw stuff
-            _this._preRenderInit(timestamp);
             _this._UpdateCallFunc(timestamp);
-            _this._Scheduler._ListenCallBacks(_this._TimeStamp);
-            _this._DrawALL();
+            _this._Scheduler._ListenCallBacks(timestamp);
+            _this._DrawALL(timestamp);
             _this.CacheCanvasToScene();
         }
     }
@@ -114,10 +114,7 @@ Director.prototype.removeEventFromKey=function(key)
     if(!this._Scheduler._removeCallBackFromKey(key))
         throwException("Director removeEventFromKey remove Event Fail!");
 }
-Director.prototype._preRenderInit = function (TimeStamp) {
-    this._TimeStamp = TimeStamp;
-}
-Director.prototype._DrawALL = function () {
+Director.prototype._DrawALL = function (timestamp) {
     this._CacheCanvas.clearRect(0, 0, this.visible.width, this.visible.height);
     for (let i = 0; i < Object.keys(this._children).length; i++) {
         let index = Object.keys(this._children)[i];
@@ -125,6 +122,8 @@ Director.prototype._DrawALL = function () {
             let child = this._children[index][j];
             if (child._Name== "Sprite") {
                 child._ProcessPositionToDrawPosition();
+                if(child._AS.animations.length!=0)
+                    child._processSpriteAnimation(timestamp);
                 if (child._degress == 0)
                     child.DrawOnCanvas(this._CacheCanvas);
                 else
@@ -151,8 +150,6 @@ Director.prototype._DrawALL = function () {
  * 圖片原始寬度
  * @param {Number} height 
  * 圖片原始高度
- * @param {Director.Canvas} canvas
- * 傳入一開始我們創造Director的實例,實例下有個canvas
  */
 var Sprite = function (ImagePath, x, y, width, height) {
     //private
@@ -168,6 +165,13 @@ var Sprite = function (ImagePath, x, y, width, height) {
     this._Image.src = ImagePath;
     this._degress = 0;
     this._scale=1;
+    this._AS={
+        animations:[],
+        animationState:0,
+        isPlay:false,
+        lastTimeStamp:0,
+        interval:50,
+    }
     //public
     this.x = x;
     this.y = y;
@@ -177,6 +181,39 @@ var Sprite = function (ImagePath, x, y, width, height) {
         point1: 0,
         point2: 0
     };
+}
+
+/**
+ * @param {String}  AS_path
+ * 圖片名稱路徑
+ * @param {String}  AS_fileExt
+ * 圖片副檔名
+ * @param {Number}  AS_Interval
+ * 動畫間距毫秒
+ * @param {Number}  AS_StartIndex
+ * 起始圖片數字
+ * @param {Number}  AS_EndIndex
+ * 結束圖片數字 
+ */
+Sprite.prototype.setAnimation = function (AS_path,AS_fileExt,AS_Interval,AS_StartIndex,AS_EndIndex) {
+    this._AS.animations.length=0;
+    this._AS.animationState=0;
+    this._AS.interval=AS_Interval;
+    for(let i=AS_StartIndex;i<=AS_EndIndex;i++)
+    {
+        let imgPath=AS_path+i+AS_fileExt;
+        let newImg=new Image();
+        newImg.src=imgPath;
+        this._AS.animations.push(newImg);
+    }
+}
+
+Sprite.prototype.play=function(){
+    this._AS.isPlay=true;
+}
+
+Sprite.prototype.stop=function(){
+    this._AS.isPlay=false;
 }
 
 //設置圖片精靈茅點 也可以說圖片中心點
@@ -206,6 +243,7 @@ Sprite.prototype.setImage=function(newImagePath)
 {
     this._Image.src = newImagePath;
 }
+//*將精靈圖片設置為初始化時的圖片
 Sprite.prototype.ResetImage=function()
 {
     this._Image.src=this._OriginImagePath;
@@ -249,22 +287,48 @@ Sprite.prototype.getOriginHeight = function () {
     return this._originHeight;
 }
 Sprite.prototype.DrawOnCanvasWithRotation = function (canvas) {
-    canvas.save();
-    canvas.translate(this._drawX + this.width / 2, this._drawY + this.height / 2);
-    canvas.rotate(this._degress * Math.PI / 180);
-    canvas.drawImage(this._Image, -this.width / 2, -this.height / 2,
-        this.width,this.height);
-    canvas.restore();
+    if(!this._AS.isPlay)
+    {
+        canvas.save();
+        canvas.translate(this._drawX + this.width / 2, this._drawY + this.height / 2);
+        canvas.rotate(this._degress * Math.PI / 180);
+        canvas.drawImage(this._Image, -this.width / 2, -this.height / 2,
+            this.width,this.height);
+        canvas.restore();
+    }
+    else
+    {
+        canvas.save();
+        canvas.translate(this._drawX + this.width / 2, this._drawY + this.height / 2);
+        canvas.rotate(this._degress * Math.PI / 180);
+        canvas.drawImage(this._AS.animations[this._AS.animationState], -this.width / 2, -this.height / 2,
+            this.width,this.height);
+        canvas.restore();
+    }
 }
 Sprite.prototype.DrawOnCanvas = function (canvas) {
-    canvas.drawImage(
-        this._Image,
-        this._drawX,
-        this._drawY,
-        this.width,
-        this.height
-    );
+    if(!this._AS.isPlay)
+    {
+        canvas.drawImage(
+            this._Image,
+            this._drawX,
+            this._drawY,
+            this.width,
+            this.height
+        );
+    }
+    else
+    {
+        canvas.drawImage(
+            this._AS.animations[this._AS.animationState],
+            this._drawX,
+            this._drawY,
+            this.width,
+            this.height
+        );
+    }
 }
+//*準備廢棄
 Sprite.prototype.runAction=function(key,actions,Director)
 {
     let sumInterval=0;
@@ -278,6 +342,17 @@ Sprite.prototype.runAction=function(key,actions,Director)
         },true);
     }
 }
+
+Sprite.prototype._processSpriteAnimation=function(timestamp){
+    if(timestamp-parseInt(this._AS.lastTimeStamp)>this._AS.interval)
+    {
+        this._AS.lastTimeStamp=timestamp;
+        this._AS.animationState++;
+        if(this._AS.animationState>=this._AS.animations.length)
+            this._AS.animationState=0;
+    }
+}
+
 Sprite.prototype._ProcessPositionToDrawPosition=function()
 {
     //anchor point
