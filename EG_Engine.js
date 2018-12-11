@@ -45,7 +45,7 @@ var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFu
     this._CacheCanvas=this._CacheCanvasElement.getContext('2d');
     this._CacheCanvas.globalCompositeOperation = "source-over";
     var _this = this;
-    this._Update = function (timestamp) {
+    this._Update = (timestamp)=> {
         _this.window.requestAnimationFrame(_this._Update);
         _this._now = Date.now();
         _this._elapsed = _this._now - _this._then;
