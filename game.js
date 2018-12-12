@@ -15,6 +15,7 @@ var _BG2;
 var _EG;
 var _plane;
 var _creatorLabel;
+var _pauseBtn;
 var keyDownState={
     "left":false,
     "up":false,
@@ -37,7 +38,7 @@ var bulletState={
 
 
 window.onload=()=>{
-    document.onkeydown=function(e){ 
+    document.onkeydown=function(e){
         keyDownState[const_keyMap[e.which]] = true;  
     };
     document.onkeyup=function(e){
@@ -85,6 +86,15 @@ window.onload=()=>{
     _enemyAI=EnemyAI.getInstance(_EG);
     _BG=new Sprite("image/BG.png",0,visible.height,600,1638);
     _BG2=new Sprite("image/BG.png",0,visible.height-1638,600,1638);
+    _pauseBtn=new Sprite("image/pause.png",0,0,100,100);
+    _pauseBtn.setAnchorPoint(0.5,0.5);
+    _pauseBtn.setScale(0.5);
+    _pauseBtn.setPosition(
+        visible.width-_pauseBtn.width/2,
+        _pauseBtn.height/2);
+    _pauseBtn.on("pointerdown",()=>{
+        console.log("設定按鈕被點擊");
+    });
     _BG.setAnchorPoint(0,1);
     _BG2.setAnchorPoint(0,1);
     _plane=new Sprite("image/plane1.png",300,750,243,158);
@@ -93,11 +103,6 @@ window.onload=()=>{
     _plane.setScale(0.7);
     _plane.setAnchorPoint(0.5,0.5);
     _creatorLabel=new Label("Created By Majitoo",200,50,"Arial",24,"White");
-
-    // _EG.addIntervalEvent("MapScroll",0.016,()=>
-    // {
-    //     _BG.y+=6;
-    // });
 }
 
 var updateFunction=function(timestamp)
@@ -106,7 +111,6 @@ var updateFunction=function(timestamp)
     {
         //do SomeThing logic
         doMapScroll();
-        // doPlaneAnimation(timestamp);
         processBullet();
         processLockBullet(timestamp);
         _enemyAI.updateFunction(timestamp);
@@ -118,6 +122,7 @@ var updateFunction=function(timestamp)
         _EG.addChild(_BG2,0);
         _EG.addChild(_plane,1);
         _EG.addChild(_creatorLabel,2);
+        _EG.addChild(_pauseBtn,5);
         _enemyAI.addAllElementToScene();
         for(let i=0;i<bulletState.bullets.length;i++)
             _EG.addChild(bulletState.bullets[i],3);
