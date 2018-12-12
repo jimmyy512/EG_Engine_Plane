@@ -59,8 +59,10 @@ var Director = function (maxFPS,CanvasWidth, CanvasHeight, CanvasID,UpdateCallFu
             _this.CacheCanvasToScene();
         }
     }
-    this._Canvas = document.getElementById(CanvasID).getContext('2d');
-    this._Canvas.globalCompositeOperation = "source-over";
+    
+    this._Canvas = document.getElementById(CanvasID);
+    this._CanvasContext=this._Canvas.getContext('2d');
+    this._CanvasContext.globalCompositeOperation = "source-over";
     this.window=window;
     this.window.requestAnimationFrame(this._Update);
 }
@@ -81,8 +83,8 @@ Director.prototype.addChild = function (child, index) {
 }
 
 Director.prototype.CacheCanvasToScene=function(){
-    this._Canvas.clearRect(0, 0, this.visible.width, this.visible.height);
-    this._Canvas.drawImage(this._CacheCanvasElement,0,0,this.visible.width, this.visible.height);
+    this._CanvasContext.clearRect(0, 0, this.visible.width, this.visible.height);
+    this._CanvasContext.drawImage(this._CacheCanvasElement,0,0,this.visible.width, this.visible.height);
 }
 
 Director.prototype.isCollision=function (el1,el2)
@@ -122,6 +124,7 @@ Director.prototype._DrawALL = function (timestamp) {
             let child = this._children[index][j];
             if (child._Name== "Sprite") {
                 child._ProcessPositionToDrawPosition();
+                child._ProcessDragEvent(this._Canvas);
                 if(child._AS.animations.length!=0)
                     child._processSpriteAnimation(timestamp);
                 if (child._degress == 0)
@@ -171,7 +174,8 @@ var Sprite = function (ImagePath, x, y, width, height) {
         isPlay:false,
         lastTimeStamp:0,
         interval:50,
-    }
+    };
+    this._dragCallBacks=[];
     //public
     this.x = x;
     this.y = y;
@@ -216,6 +220,19 @@ Sprite.prototype.stop=function(){
     this._AS.isPlay=false;
 }
 
+Sprite.prototype.on=function(option,callback){
+    let obj={
+        "option":option,
+        "callback":callback,
+        "isInit":false,
+    };
+    let index=this._dragCallBacks.findIndex(ele=> ele.option==option)
+    if(index==-1)
+        this._dragCallBacks.push(obj);
+    else
+        console.log(`Sprite on ${option},is already registered!`);
+}
+
 //設置圖片精靈茅點 也可以說圖片中心點
 //目前支援參數有
 // (0,0);
@@ -250,6 +267,8 @@ Sprite.prototype.ResetImage=function()
 }
 Sprite.prototype.setScale = function (scale) {
     this._scale=scale;
+    this.width = this._originWidth * this._scale;
+    this.height = this._originHeight * this._scale;
 }
 Sprite.prototype.setPosition = function (x, y) {
     this.x = x;
@@ -261,6 +280,23 @@ Sprite.prototype.getPosition=function()
         x:this.x,
         y:this.y
     }
+}
+
+/**
+ * @param {Number} x 
+ * @param {Number} y
+ * 傳入一個座標
+ * 當此座標在此物件的範圍內
+ *  return true;
+ * 否則
+ *  return false;
+ */
+Sprite.prototype.isContainPoint=function (x,y,canvas)
+{
+    x=x-canvas.getBoundingClientRect().top;
+    y=y-canvas.getBoundingClientRect().left;
+    return this._drawX <= x && x <= this._drawX + this.width &&
+    this._drawY <= y && y <= this._drawY + this.height;
 }
 Sprite.prototype.setRotation = function (degress) {
     this._degress = degress;
@@ -350,6 +386,23 @@ Sprite.prototype._processSpriteAnimation=function(timestamp){
         this._AS.animationState++;
         if(this._AS.animationState>=this._AS.animations.length)
             this._AS.animationState=0;
+    }
+}
+
+Sprite.prototype._ProcessDragEvent=function(canvas){
+    // console.log(canvas);
+    for(let i=0;i<this._dragCallBacks.length;i++)
+    {
+        if(this._dragCallBacks[i].isInit==false)
+        {
+            this._dragCallBacks[i].isInit=true;
+            canvas.addEventListener('click', 
+            (e)=>{
+                if(this.isContainPoint(e.x,e.y,canvas)) {
+                    this._dragCallBacks[i].callback();
+                }
+            })
+        }
     }
 }
 
