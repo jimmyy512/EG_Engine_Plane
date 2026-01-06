@@ -35,6 +35,9 @@ var bulletState={
     isLock:false,
     isShoot:false,
 }
+var explosionState={
+    explosions:[],
+}
 
 
 window.onload=()=>{
@@ -114,7 +117,7 @@ var updateFunction=function(timestamp)
         processBullet();
         processLockBullet(timestamp);
         _enemyAI.updateFunction(timestamp);
-        BulletCollisionUpdate(bulletState.bullets,_enemyAI.getAllEnemy());
+        BulletCollisionUpdate(bulletState.bullets,_enemyAI.getAllEnemy(),timestamp);
         if(_enemyAI.getAllEnemy().length<=1)
             _enemyAI.addEnemy(new Sprite("image/Enemy1.png",Math.floor(Math.random()*500+50),-50,173,150));
         //addSpriteToScene
@@ -126,6 +129,9 @@ var updateFunction=function(timestamp)
         _enemyAI.addAllElementToScene();
         for(let i=0;i<bulletState.bullets.length;i++)
             _EG.addChild(bulletState.bullets[i],3);
+        processExplosion(timestamp);
+        for(let i=0;i<explosionState.explosions.length;i++)
+            _EG.addChild(explosionState.explosions[i].sprite,4);
     }
 };
 
@@ -155,16 +161,30 @@ var updateFunction=function(timestamp)
 //     new Image().src = 'image/explosion015.png';
 // }
 
-var BulletCollisionUpdate=function(bullets,enemys)
+var BulletCollisionUpdate=function(bullets,enemys,timestamp)
 {
     for(let i=0;i<bullets.length;i++)
     {
+        //檢查子彈是否存在
+        if(!bullets[i])
+            continue;
         for(let j=0;j<enemys.length;j++)
         {
+            //檢查敵機是否存在
+            if(!enemys[j] || !enemys[j].sprite)
+                continue;
             if(_EG.isCollision(bullets[i], enemys[j].sprite))
             {//hit
                 enemys[j].state.hp-=20;
-                bulletState.bullets.remove(bullets[i])
+                bulletState.bullets.remove(bullets[i]);
+                if(enemys[j].state.hp<=0)
+                {
+                    //在敵機位置創建爆炸動畫
+                    createExplosion(enemys[j].sprite.x, enemys[j].sprite.y, timestamp);
+                }
+                //子彈已被移除，跳出內層循環處理下一個子彈
+                i--;
+                break;
             }
         }
     }
@@ -194,9 +214,18 @@ var shot=function(){
 var processBullet=function(){
     for(let i=0;i<bulletState.bullets.length;i++)
     {
+        //檢查子彈是否存在
+        if(!bulletState.bullets[i])
+        {
+            i--;
+            continue;
+        }
         bulletState.bullets[i].y-=bulletState.moveSpeed;
         if(bulletState.bullets[i].y<-10)
-            bulletState.bullets.remove(bulletState.bullets[i])
+        {
+            bulletState.bullets.remove(bulletState.bullets[i]);
+            i--; //調整索引，因為元素已被移除
+        }
     }
 }
 
@@ -210,4 +239,48 @@ var processLockBullet=function(timestamp){
     if(timestamp-bulletState.lastTimeStamp>planeState.bulletInterval)
         bulletState.isLock=false;
     
+}
+
+var createExplosion=function(x,y,timestamp)
+{
+    let explosionSprite=new Sprite("image/explosion001.png",x,y,160,160);
+    explosionSprite.setScale(0.7);
+    explosionSprite.setAnchorPoint(0.5,0.5);
+    let obj={
+        "sprite":explosionSprite,
+        "lastStamp":timestamp,
+        "animationState":1,
+    }
+    explosionState.explosions.push(obj);
+}
+
+var processExplosion=function(timestamp)
+{
+    for(let i=0;i<explosionState.explosions.length;i++)
+    {
+        //檢查爆炸動畫是否存在
+        if(!explosionState.explosions[i])
+        {
+            i--;
+            continue;
+        }
+        let explosion=explosionState.explosions[i];
+        if(parseInt(timestamp-explosion.lastStamp)>EXPLOSION_ANIMATION_INTERVAL)
+        {
+            explosion.animationState++;
+            if(explosion.animationState==16)
+            {
+                //動畫播放完成，移除物件
+                explosionState.explosions.remove(explosion);
+                i--; //調整索引，因為元素已被移除
+                continue;
+            }
+            //根據動畫狀態設置正確的檔名格式
+            if(explosion.animationState<10)
+                explosion.sprite.setImage(`image/explosion00${explosion.animationState}.png`);
+            else
+                explosion.sprite.setImage(`image/explosion0${explosion.animationState}.png`);
+            explosion.lastStamp=timestamp;
+        }
+    }
 }
