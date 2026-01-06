@@ -81,18 +81,6 @@ EG_Engine_Plane/
 # 右鍵點擊 index.html -> Open with Live Server
 ```
 
-### 使用 Python
-
-```bash
-# Python 3
-python -m http.server 8000
-
-# Python 2
-python -m SimpleHTTPServer 8000
-```
-
-然後在瀏覽器中打開 `http://localhost:8000`
-
 ## 🎨 遊戲配置
 
 在 `config.js` 中可以調整以下參數：
@@ -107,10 +95,6 @@ python -m SimpleHTTPServer 8000
 
 [點擊這裡體驗線上版本](https://jimmyy512.github.io/EG_Engine_Plane/)
 
-## 👨‍💻 開發者
-
-Created By Majitoo
-
 ## 📝 技術特點
 
 - **純 JavaScript**：無需任何框架或庫
@@ -118,16 +102,6 @@ Created By Majitoo
 - **物件導向設計**：清晰的程式碼結構，易於擴展
 - **模組化架構**：引擎、遊戲邏輯、AI 系統分離
 - **高效能**：優化的遊戲循環和渲染系統
-
-## 🔧 未來計劃
-
-- [ ] 添加分數系統
-- [ ] 添加生命值系統
-- [ ] 添加關卡系統
-- [ ] 添加音效和背景音樂
-- [ ] 添加更多敵機類型
-- [ ] 添加道具系統
-- [ ] 添加暫停功能
 
 ## 📄 授權
 
